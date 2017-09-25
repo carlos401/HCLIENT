@@ -1,3 +1,10 @@
+/**
+ * UNIVERSIDAD DE COSTA RICA
+ * ESCUELA DE CIENCIAS DE LA COMPUTACION E INFORMATICA
+ * CI-1310 SISTEMAS OPERATIVOS
+ * SEGUNDA TAREA PROGRAMADA, CARLOS DELGADO ROJAS (B52368)
+ */
+
 import java.rmi.RemoteException;
 
 public interface HackService extends java.rmi.Remote{

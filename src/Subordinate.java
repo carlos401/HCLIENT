@@ -1,4 +1,12 @@
-import java.rmi.Naming;
+/**
+ * UNIVERSIDAD DE COSTA RICA
+ * ESCUELA DE CIENCIAS DE LA COMPUTACION E INFORMATICA
+ * CI-1310 SISTEMAS OPERATIVOS
+ * SEGUNDA TAREA PROGRAMADA, CARLOS DELGADO ROJAS (B52368)
+ */
+
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -16,16 +24,21 @@ public class Subordinate extends UnicastRemoteObject implements HackService {
 
     private String hash; //the hash to be hack
     private String answer; //if this subordinate found the password
-    private String file; //the name of the file
+    private String fileToRead; //the name of the file
     private Boolean found; //stop signal
 
     /**
-     *
-     * @param file
+     * The constructor
+     * @param file the name of the file with passwords
      * @throws RemoteException
      */
-    public Subordinate (String file) throws RemoteException{
-        this.file = file;
+    public Subordinate (String file) throws RemoteException, FileNotFoundException{
+        File archivo = new File(file);
+        if (archivo.exists()){
+            this.fileToRead = file;
+        }else{
+            throw new FileNotFoundException();
+        }
         this.found = false;
     }
 
@@ -36,7 +49,8 @@ public class Subordinate extends UnicastRemoteObject implements HackService {
 
     @Override
     public boolean hackear() throws RemoteException{
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+        System.out.println(">> An instruction has been received, hacking password");
+        try (BufferedReader br = new BufferedReader(new FileReader(fileToRead))) {
             String line; //where the line is buffered
             while ((line = br.readLine()) != null && !found) {
                 List<String> list = new ArrayList<>(200);
@@ -74,35 +88,30 @@ public class Subordinate extends UnicastRemoteObject implements HackService {
     public static void main (String args[]) throws Exception
     {
         try{
-            Registry reg = LocateRegistry.createRegistry(3333);
+            Registry reg = LocateRegistry.createRegistry(Integer.parseInt(args[0]));
             // Create an instance of our power service server ...
-            Subordinate svr = new Subordinate(args[0]);
+            Subordinate svr = new Subordinate(args[1]);
             // ... and bind it with the RMI Registry
             reg.rebind ("HackService", svr);
-            System.out.println ("Service bound....");
+            System.out.println (">> Service bound....");
         } catch (Exception e){
             System.out.println(e.getMessage());
         }
     }
 
-    /**
-     *
-     */
     class HasherThread extends Thread{
 
         List<String> lines;//
 
         /**
-         *
-         * @param lines
+         * The constructor
+         * @param lines the lines to be hack
          */
         public HasherThread(List<String> lines){
             this.lines = lines;
         }
 
-        /**
-         *
-         */
+        @Override
         public void run(){
             Iterator<String> ite = this.lines.iterator();
             String line;
@@ -112,18 +121,19 @@ public class Subordinate extends UnicastRemoteObject implements HackService {
                     if (hash.equals(getHash(line))) {
                         found = true;
                         answer = line;
+                        System.out.println(">> Password found: "+line);
                     }
                 } catch (Exception e){
-                    System.out.println("Error con las comparaciones hash");
+                    System.out.println(">> Error con las comparaciones hash");
                 }
             }
         }
     }
 
     /**
-     *
-     * @param s
-     * @return
+     * Function that returns the hash associate with a string
+     * @param s the string to hash
+     * @return the hash associate
      * @throws NoSuchAlgorithmException
      */
     public static String getHash(String s) throws NoSuchAlgorithmException {
@@ -131,5 +141,4 @@ public class Subordinate extends UnicastRemoteObject implements HackService {
         m.update(s.getBytes(),0,s.length());
         return new BigInteger(1,m.digest()).toString(16);
     }
-
 }
